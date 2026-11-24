@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 type Cat = { id: string; name: string; position: number };
 type Sub = { id: string; category_id: string; name: string; description: string };
 type Mod = { id: string; subject_id: string; name: string; description: string };
-type Les = { id: string; module_id: string; title: string; status: "not_started" | "in_progress" | "completed"; bookmarked: boolean };
+type Les = { id: string; module_id: string; title: string; status: "not_started" | "in_progress" | "completed"; bookmarked: boolean; source_library_item_id: string | null };
 
 type Kind = "category" | "subject" | "module" | "lesson";
 type Form = { kind: Kind; id?: string; parentId?: string; name: string; description: string };
@@ -56,7 +56,7 @@ export function MateriClient() {
       supabase.from("categories").select("id,name,position").order("position").order("created_at"),
       supabase.from("subjects").select("id,category_id,name,description").order("position").order("created_at"),
       supabase.from("modules").select("id,subject_id,name,description").order("position").order("created_at"),
-      supabase.from("lessons").select("id,module_id,title,status,bookmarked").order("position").order("created_at"),
+      supabase.from("lessons").select("id,module_id,title,status,bookmarked,source_library_item_id").order("position").order("created_at"),
     ]);
     if (c.error || s.error || m.error || l.error) setError("Gagal memuat materi. Pastikan migrasi database sudah dijalankan.");
     else setError(null);
@@ -306,6 +306,7 @@ export function MateriClient() {
                                             <Link href={`/materi/lesson/${l.id}`} className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-surface2/40">
                                               {l.bookmarked && <BookMarked className="h-3.5 w-3.5 shrink-0 text-gold" aria-label="Bookmark" />}
                                               <span className="min-w-0 flex-1 truncate">{l.title}</span>
+                                              {l.source_library_item_id && <span className="shrink-0 rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-semibold text-accent">Library</span>}
                                               <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold", STATUS_STYLE[l.status].cls)}>{STATUS_STYLE[l.status].label}</span>
                                             </Link>
                                           </li>

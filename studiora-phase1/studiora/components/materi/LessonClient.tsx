@@ -28,6 +28,8 @@ type Lesson = {
   attachments: Attachment[];
   bookmarked: boolean;
   status: Status;
+  source_library_item_id: string | null;
+  estimated_minutes: number | null;
   modules: { name: string; subjects: { name: string; categories: { name: string } | null } | null } | null;
 };
 
@@ -70,6 +72,7 @@ export function LessonClient({ lessonId }: { lessonId: string }) {
   const [noteDone, setNoteDone] = useState(false);
   const [noteSaving, setNoteSaving] = useState(false);
 
+  const [sourceTitle, setSourceTitle] = useState<string | null>(null);
   const [levelUp, setLevelUp] = useState<{ level: number; title: string } | null>(null);
   const [statusBusy, setStatusBusy] = useState(false);
 
@@ -86,7 +89,7 @@ export function LessonClient({ lessonId }: { lessonId: string }) {
 
       const { data, error } = await supabase
         .from("lessons")
-        .select("id,title,description,objectives,content_html,external_refs,attachments,bookmarked,status,modules(name,subjects(name,categories(name)))")
+        .select("id,title,description,objectives,content_html,external_refs,attachments,bookmarked,status,source_library_item_id,estimated_minutes,modules(name,subjects(name,categories(name)))")
         .eq("id", lessonId)
         .maybeSingle();
       if (error) return setLoadError(true);
@@ -101,6 +104,11 @@ export function LessonClient({ lessonId }: { lessonId: string }) {
       }
       await supabase.from("lessons").update(patch).eq("id", lessonId);
       setLesson(l);
+
+      if (l.source_library_item_id) {
+        const { data: src } = await supabase.from("library_items").select("title").eq("id", l.source_library_item_id).maybeSingle();
+        setSourceTitle(src?.title ?? "Library");
+      }
 
       const { data: n } = await supabase
         .from("lesson_notes")
@@ -316,6 +324,14 @@ export function LessonClient({ lessonId }: { lessonId: string }) {
       <div>
         <Link href="/materi" className="text-xs font-semibold text-primary hover:underline">← Materi</Link>
         <p className="mt-2 text-xs text-muted">{crumb}</p>
+        {lesson.source_library_item_id && (
+          <p className="mt-1 text-xs">
+            <Link href="/library" className="inline-flex items-center gap-1 rounded-full bg-accent/15 px-2 py-0.5 font-semibold text-accent hover:underline">
+              Sumber: {sourceTitle ?? "Library"}
+            </Link>
+            {lesson.estimated_minutes ? <span className="ml-2 text-muted">±{lesson.estimated_minutes} menit</span> : null}
+          </p>
+        )}
         <div className="mt-1 flex flex-wrap items-start justify-between gap-3">
           <h1 className="min-w-0 flex-1 font-display text-2xl font-extrabold sm:text-3xl">{editing ? "Edit Materi" : lesson.title}</h1>
           <div className="flex flex-wrap items-center gap-2">

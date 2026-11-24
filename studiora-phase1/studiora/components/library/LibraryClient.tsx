@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { BookMarked, ExternalLink, FileText, Loader2, Paperclip, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import Link from "next/link";
+import { BookMarked, ExternalLink, FileText, Loader2, Paperclip, Pencil, Plus, Search, Sparkles, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { FILE_TYPES, uploadStudyFile } from "@/lib/upload";
 import { Modal, ConfirmButton } from "@/components/ui/Modal";
@@ -46,11 +47,17 @@ export function LibraryClient() {
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  const [imported, setImported] = useState<Set<string>>(new Set());
+
   const load = useCallback(async () => {
-    const { data, error } = await createClient().from("library_items").select("*").order("created_at", { ascending: false });
+    const supabase = createClient();
+    const { data, error } = await supabase.from("library_items").select("*").order("created_at", { ascending: false });
     setError(error ? "Gagal memuat Library." : null);
     setItems((data as Item[]) ?? []);
     setLoading(false);
+    // Item yang sudah pernah dijadikan materi (tabel baru; abaikan jika migrasi 0003 belum dijalankan).
+    const { data: imps } = await supabase.from("material_imports").select("library_item_id").eq("status", "applied");
+    setImported(new Set((imps ?? []).map((r: { library_item_id: string }) => r.library_item_id)));
   }, []);
 
   useEffect(() => {
@@ -197,6 +204,9 @@ export function LibraryClient() {
                     <FileText className="h-3.5 w-3.5" /> Buka file
                   </a>
                 )}
+                <Link href={`/library/import/${i.id}`} className="ml-auto inline-flex items-center gap-1.5 rounded-lg border border-accent/40 px-2.5 py-1 text-xs font-semibold text-accent transition hover:bg-accent/10">
+                  <Sparkles className="h-3.5 w-3.5" /> {imported.has(i.id) ? "Sudah jadi materi" : "Jadikan Materi"}
+                </Link>
               </div>
             </li>
           ))}

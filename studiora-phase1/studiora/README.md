@@ -44,3 +44,21 @@ Vercel atau host Next.js lain. Isi dua env di atas. Untuk akses privat, cukup an
 ## PWA
 
 `manifest.webmanifest`, ikon (192/512/apple-touch), dan service worker yang hanya men-cache aset statis (data pengguna tidak di-cache). Aktif pada build produksi.
+
+## Fase 2.5 — Materi otomatis dari Library (AI)
+
+Dari item Library (PDF / link / artikel), tekan **Jadikan Materi**. AI membaca isinya dan mengusulkan mata pelajaran, modul, dan lesson. Kamu centang yang mau dipelajari, atur jadwal bila perlu, lalu terapkan.
+
+### Cara pasang
+1. **Jalankan migrasi dulu** di Supabase → SQL Editor: isi `supabase/migrations/0003_material_imports.sql`. Lakukan SEBELUM deploy kode (halaman Materi sekarang membaca kolom baru).
+2. Buat API key di https://console.anthropic.com → API Keys.
+3. Netlify → Environment variables, tambahkan:
+   - `ANTHROPIC_API_KEY` = key tadi. **Jangan** diawali `NEXT_PUBLIC_`, dan centang "Contains secret values".
+   - (opsional) `AI_MODEL` (default `claude-haiku-5-5`), `CHUNK_CHARS` (default dari kode), `MAX_CHUNKS`.
+4. Deploy ulang (Clear cache and deploy).
+
+### Batasan
+- PDF hasil scan (berupa gambar) belum didukung; akan muncul pesan jelas.
+- Hanya PDF, txt/csv, dan link web (http/https). Link ke alamat internal diblokir.
+- AI bisa keliru; hasil selalu ditinjau dulu sebelum disimpan.
+- Setiap proses memakai kuota API berbayar (dokumen dipotong per bagian; ada batas jumlah bagian).
