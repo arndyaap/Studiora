@@ -1,13 +1,7 @@
-import { ComingSoon } from "@/components/ComingSoon";
+import { MateriClient } from "@/components/materi/MateriClient";
 
 export const metadata = { title: "Materi" };
 
 export default function Page() {
-  return (
-    <ComingSoon
-      title="Materi"
-      phase={2}
-      description="Knowledge Center bertingkat (Kategori → Subject → Modul → Lesson) lengkap dengan editor materi."
-    />
-  );
+  return <MateriClient />;
 }
