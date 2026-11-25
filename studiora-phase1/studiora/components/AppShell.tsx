@@ -8,6 +8,7 @@ import {
   BarChart3,
   BookOpen,
   CalendarDays,
+  Gift,
   Home,
   Library,
   MoreHorizontal,
@@ -39,6 +40,7 @@ const MORE: NavItem[] = [
   { href: "/library", label: "Library", icon: Library },
   { href: "/focus", label: "Focus Room", icon: Timer },
   { href: "/notes", label: "Quick Notes", icon: NotebookPen },
+  { href: "/rewards", label: "Reward Shop", icon: Gift },
   { href: "/achievements", label: "Achievements", icon: Award },
   { href: "/settings", label: "Settings", icon: Settings },
 ];

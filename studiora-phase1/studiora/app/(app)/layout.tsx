@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { AppShell } from "@/components/AppShell";
+import { MissionSync } from "@/components/missions/MissionSync";
 import { ThemeProvider, type Theme } from "@/components/ThemeProvider";
 
 export const dynamic = "force-dynamic";
@@ -23,6 +24,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <ThemeProvider initialTheme={theme}>
       <AppShell displayName={profile?.display_name ?? "Scholar"} avatarUrl={profile?.avatar_url ?? null}>
         {children}
+        <MissionSync />
       </AppShell>
     </ThemeProvider>
   );

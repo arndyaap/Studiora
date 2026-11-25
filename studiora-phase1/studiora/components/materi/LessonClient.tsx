@@ -6,9 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BookMarked, Check, ExternalLink, FileText, Loader2, Paperclip, Pencil, Plus, Save, Trash2, Trophy, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { sanitizeHtml } from "@/lib/sanitize";
-import { awardXpOnce } from "@/lib/xp";
-import { getLevel } from "@/lib/levels";
-import { checkLessonAchievements } from "@/lib/achievements";
+import { awardLessonXp, awardNoteXp, checkAchievements, detectLevelUp, getTotalXp, syncMissions } from "@/lib/xp";
 import { FILE_TYPES, IMAGE_TYPES, uploadStudyFile } from "@/lib/upload";
 import { ConfirmButton } from "@/components/ui/Modal";
 import { RichEditor } from "@/components/materi/RichEditor";
@@ -230,27 +228,26 @@ export function LessonClient({ lessonId }: { lessonId: string }) {
     }
   }
 
-  /** Memberi XP, lalu mengecek naik level dan achievement. Mengembalikan true bila XP baru diberikan. */
-  async function rewardAndCheck(amount: number, source: "lesson_completed" | "lesson_note_completed", note: string) {
+  /** Memberi XP lewat fungsi database, lalu sinkron misi, cek naik level dan achievement. Mengembalikan XP yang diberikan. */
+  async function rewardAndCheck(kind: "lesson" | "note") {
     const supabase = createClient();
-    const { data: before } = await supabase.from("profiles").select("total_xp").maybeSingle();
-    const awarded = await awardXpOnce(supabase, { amount, source, sourceId: lessonId, note });
-    if (!awarded) return false;
-
-    await supabase.from("notifications").insert({ type: "mission", title: `+${amount} XP: ${note}`, body: "" });
-
-    const { data: after } = await supabase.from("profiles").select("total_xp").maybeSingle();
-    if (before && after) {
-      const b = getLevel(before.total_xp);
-      const a = getLevel(after.total_xp);
-      if (a.level > b.level) {
-        setLevelUp({ level: a.level, title: a.title });
-        await supabase.from("notifications").insert({ type: "level_up", title: `Naik level! Level ${a.level}: ${a.title}`, body: "" });
-      }
+    const before = await getTotalXp(supabase);
+    const given = kind === "lesson" ? await awardLessonXp(supabase, lessonId) : await awardNoteXp(supabase, lessonId);
+    if (given > 0) {
+      await supabase.from("notifications").insert({
+        type: "mission",
+        title: `+${given} XP: ${kind === "lesson" ? `Materi selesai: ${lesson?.title ?? ""}` : "Catatan pribadi selesai"}`,
+        body: "",
+      });
     }
-    const unlocked = await checkLessonAchievements(supabase);
-    if (unlocked.length) flash("ok", `Achievement terbuka: ${unlocked.map((u) => u.title).join(", ")}`);
-    return true;
+    const missions = await syncMissions(supabase);
+    const unlocked = await checkAchievements(supabase);
+    const up = await detectLevelUp(supabase, before);
+    if (up) setLevelUp(up);
+    const extra: string[] = [];
+    if (missions.length) extra.push(`Misi selesai: ${missions.map((m) => m.title).join(", ")}`);
+    if (unlocked.length) extra.push(`Achievement terbuka: ${unlocked.map((u) => u.title).join(", ")}`);
+    return { given, extra: extra.join(" · ") };
   }
 
   async function changeStatus(next: Status) {
@@ -269,8 +266,9 @@ export function LessonClient({ lessonId }: { lessonId: string }) {
     setLesson({ ...lesson, status: next });
 
     if (next === "completed") {
-      const got = await rewardAndCheck(LESSON_XP, "lesson_completed", `Materi selesai: ${lesson.title}`);
-      flash("ok", got ? `Materi selesai! +${LESSON_XP} XP` : "Materi selesai. XP untuk materi ini sudah pernah diberikan.");
+      const r = await rewardAndCheck("lesson");
+      const base = r.given > 0 ? `Materi selesai! +${r.given} XP` : "Materi selesai. XP untuk materi ini sudah pernah diberikan.";
+      flash("ok", r.extra ? `${base} ${r.extra}` : base);
     }
     setStatusBusy(false);
   }
@@ -294,8 +292,9 @@ export function LessonClient({ lessonId }: { lessonId: string }) {
     setNoteDone(completed);
 
     if (markDone) {
-      const got = await rewardAndCheck(NOTE_XP, "lesson_note_completed", "Catatan pribadi selesai");
-      flash("ok", got ? `Catatan selesai! +${NOTE_XP} XP` : "Catatan tersimpan. XP catatan untuk lesson ini sudah pernah diberikan.");
+      const r = await rewardAndCheck("note");
+      const base = r.given > 0 ? `Catatan selesai! +${r.given} XP` : "Catatan tersimpan. XP catatan untuk lesson ini sudah pernah diberikan.";
+      flash("ok", r.extra ? `${base} ${r.extra}` : base);
     } else flash("ok", "Catatan tersimpan.");
   }
 

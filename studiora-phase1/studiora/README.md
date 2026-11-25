@@ -62,3 +62,24 @@ Dari item Library (PDF / link / artikel), tekan **Jadikan Materi**. AI membaca i
 - Hanya PDF, txt/csv, dan link web (http/https). Link ke alamat internal diblokir.
 - AI bisa keliru; hasil selalu ditinjau dulu sebelum disimpan.
 - Setiap proses memakai kuota API berbayar (dokumen dipotong per bagian; ada batas jumlah bagian).
+
+## Fase 3 — Misi, Quiz, XP aman, Reward Shop, Achievements
+
+### Cara pasang
+1. Supabase → SQL Editor → jalankan `supabase/migrations/0004_phase3_missions_quiz_rewards.sql` SEBELUM deploy kode. Aman dijalankan ulang. Syarat: migrasi 0001–0003 sudah dijalankan.
+2. Timpa file dari zip, commit, push, lalu Netlify → Clear cache and deploy.
+3. Pembuatan soal dengan AI memakai `ANTHROPIC_API_KEY` yang sama dengan fitur Jadikan Materi.
+
+### Yang berubah di keamanan
+Browser tidak bisa lagi menulis XP, achievement, riwayat quiz, dan riwayat penukaran reward secara langsung. Semuanya lewat fungsi database: `award_lesson_xp`, `award_note_xp`, `submit_quiz` (menilai jawaban di server), `sync_missions`, `check_achievements`, `redeem_reward`.
+
+### Aturan XP
+- Lesson selesai 20 XP dan catatan selesai 10 XP, masing-masing sekali per lesson.
+- Quiz: 2 XP per jawaban benar (maks. 40) + 10 XP bonus nilai sempurna (min. 3 soal). Satu percobaan per materi per hari yang memberi XP, maks. 100 XP quiz per hari.
+- Misi: harian (2) dan mingguan (3) dibuat otomatis. Challenge, Boss, dan Quiz bisa kamu buat sendiri; hadiah ditentukan dari jenis dan kesulitan. Maks. 300 XP dari misi per hari.
+- Reward hanya mengurangi Available XP, bukan Total XP/Level.
+
+### Batasan
+- Tipe soal “matching” belum tersedia (pilihan ganda, benar/salah, isian singkat sudah).
+- Achievement Consistency dan Dedicated Scholar menunggu fitur streak di Phase 4.
+- Soal buatan AI bisa keliru; periksa dulu.
